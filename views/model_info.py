@@ -10,8 +10,12 @@ import streamlit as st
 from src import config
 from src.app_resources import get_model_bundle, load_artifact_json
 from src.features import FEATURE_DESCRIPTIONS
+from src.theme import hero
 
-st.title("Model Information")
+hero(
+    title="Model Information",
+    subtitle="Details about the deployed spam classification model.",
+)
 
 card = load_artifact_json(config.MODEL_CARD_PATH)
 model, model_error = get_model_bundle()

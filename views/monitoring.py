@@ -10,11 +10,16 @@ import streamlit as st
 from src.app_resources import get_metrics_store, theme_is_dark
 from src.charts import class_distribution_chart, latency_chart
 from src.logging_utils import get_log_buffer
+from src.theme import hero
+
+hero(
+    title="Monitoring",
+    subtitle="Request history and latency.",
+)
 
 store = get_metrics_store()
 dark = theme_is_dark()
 
-st.title("Monitoring")
 st.caption(
     f"In-memory metrics shared by all users of this app instance. Counters are cumulative since the process "
     f"started; latency p95, charts and history cover the last {store.window_size:,} requests, and the log view keeps "

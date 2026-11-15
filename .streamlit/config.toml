@@ -1,9 +1,10 @@
-[server]
-# Uploaded .eml files larger than this (MB) are rejected by Streamlit; the app also enforces a 1 MB email limit.
-maxUploadSize = 2
-
-[browser]
-gatherUsageStats = false
-
-[client]
-toolbarMode = "viewer"
+# Rengoku fire theme: tables (st.dataframe) are canvas-drawn, so they are colored here, not with CSS.
+[theme]
+base = "dark"
+primaryColor = "#ffb703"
+backgroundColor = "#10070a"
+secondaryBackgroundColor = "#1b0d12"
+textColor = "#f8eee8"
+dataframeHeaderBackgroundColor = "#30171b"
+dataframeHeaderTextColor = "#f5ded1"
+dataframeBorderColor = "#70402f"

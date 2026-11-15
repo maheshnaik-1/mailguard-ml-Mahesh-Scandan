@@ -1,4 +1,4 @@
-"""Page 1 - Email Analyzer."""
+"""Page 1 - Email Analyzer (Rengoku flame theme)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from src.app_resources import get_service, theme_is_dark
 from src.charts import contribution_chart, probability_bar
 from src.features import FEATURE_DESCRIPTIONS
 from src.inference import InferenceError, ModelUnavailableError, PredictionResult
+from src.theme import hero, verdict_banner
 from src.validation import ValidationError, validate_upload_filename
 
 BODY_PREVIEW_CHARS = 4_000
@@ -17,9 +18,12 @@ BODY_PREVIEW_CHARS = 4_000
 service = get_service()
 dark = theme_is_dark()
 
-st.title("Email Analyzer")
+# Theme CSS + embers are injected once in app.py so every page shares them.
+hero(
+    title="Email Analyzer",
+    subtitle="Analyze an email and determine whether it is spam or legitimate.",
+)
 st.caption(
-    "Paste raw email source (headers + body), paste just the body text, or upload an `.eml` file. "
     "Content is analysed in memory only; logs record request metadata, never the email itself."
 )
 
@@ -41,7 +45,8 @@ def _reset_threshold() -> None:
 
 def _run(raw: str | bytes | None, source: str) -> None:
     try:
-        st.session_state.last_result = service.analyze(raw, threshold=st.session_state.threshold, source=source)
+        with st.spinner("Kindling the flames... analysing email"):
+            st.session_state.last_result = service.analyze(raw, threshold=st.session_state.threshold, source=source)
         st.session_state.last_error = None
     except ValidationError as exc:
         st.session_state.last_error = ("warning", str(exc))
@@ -54,14 +59,14 @@ def _run(raw: str | bytes | None, source: str) -> None:
 input_col, settings_col = st.columns([3, 1], gap="large")
 
 with settings_col:
-    st.subheader("Decision threshold")
+    st.subheader("Flame intensity")
     st.slider(
         "Spam if probability ≥", min_value=0.0, max_value=1.0, step=0.01, key="threshold",
         help="Lower = catch more spam but risk more false positives. Moving the slider re-labels the current "
         "result instantly without sending a new request.",
     )
     st.button(f"Reset to tuned value ({model.threshold:.2f})", on_click=_reset_threshold, width="stretch")
-    st.caption(f"The tuned threshold maximizes F0.5 on the validation split (precision-weighted).")
+    st.caption("The tuned threshold maximizes F0.5 on the validation split (precision-weighted).")
 
 with input_col:
     tab_paste, tab_upload, tab_sample = st.tabs([":material/content_paste: Paste", ":material/upload_file: Upload .eml", ":material/science: Samples"])
@@ -70,11 +75,11 @@ with input_col:
             "Raw email source or body text", height=240, max_chars=config.MAX_EMAIL_BYTES,
             placeholder="From: sender@example.com\nTo: you@example.com\nSubject: Hello\n\nMessage body...",
         )
-        if st.button("Analyze pasted email", type="primary", icon=":material/search:"):
+        if st.button("Analyze pasted email", type="primary", icon=":material/local_fire_department:"):
             _run(pasted, "paste")
     with tab_upload:
         uploaded = st.file_uploader("Upload an email file", type=["eml", "txt"], accept_multiple_files=False)
-        if st.button("Analyze uploaded file", type="primary", icon=":material/search:", disabled=uploaded is None):
+        if st.button("Analyze uploaded file", type="primary", icon=":material/local_fire_department:", disabled=uploaded is None):
             try:
                 validate_upload_filename(uploaded.name if uploaded else None)
                 _run(uploaded.getvalue() if uploaded else None, "upload")
@@ -86,7 +91,7 @@ with input_col:
         if choice:
             with st.expander("Preview sample source"):
                 st.code((config.SAMPLES_DIR / choice).read_text(encoding="utf-8", errors="replace"), language=None)
-        if st.button("Analyze sample", type="primary", icon=":material/search:", disabled=not choice):
+        if st.button("Analyze sample", type="primary", icon=":material/local_fire_department:", disabled=not choice):
             _run((config.SAMPLES_DIR / choice).read_bytes(), "sample")
 
 err = st.session_state.get("last_error")
@@ -103,15 +108,13 @@ threshold = float(st.session_state.threshold)
 label = result.label_at(threshold)
 is_spam = label == "spam"
 
+verdict_banner(is_spam, result.spam_probability, threshold)
+
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Verdict", "SPAM" if is_spam else "HAM", help="HAM = legitimate email")
 c2.metric("Spam probability", f"{result.spam_probability:.1%}")
 c3.metric("Threshold", f"{threshold:.2f}")
 c4.metric("Latency", f"{result.latency_ms:.1f} ms")
-if is_spam:
-    st.error(f"Classified as **spam** (probability {result.spam_probability:.3f} ≥ {threshold:.2f}).", icon=":material/report:")
-else:
-    st.success(f"Classified as **ham** (probability {result.spam_probability:.3f} < {threshold:.2f}).", icon=":material/verified:")
 st.plotly_chart(probability_bar(result.spam_probability, threshold, dark), width="stretch", config={"displayModeBar": False})
 st.caption(
     f"Request `{result.request_id}` · {result.model_name} v{result.model_version}"

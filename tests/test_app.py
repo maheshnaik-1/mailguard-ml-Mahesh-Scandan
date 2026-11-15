@@ -22,9 +22,17 @@ def _fresh_app() -> AppTest:
     return at
 
 
+def _hero_markup(at: AppTest) -> str:
+    headers = [
+        item.value for item in at.markdown if '<header class="rg-page-header">' in item.value
+    ]
+    assert len(headers) == 1
+    return headers[0]
+
+
 def test_analyzer_page_runs_sample_and_updates_monitoring():
     at = _fresh_app()
-    assert at.title[0].value == "Email Analyzer"
+    assert "<h1>Email Analyzer</h1>" in _hero_markup(at)
 
     from src.app_resources import get_metrics_store
 
@@ -61,15 +69,33 @@ def test_analyzer_body_only_paste():
 
 
 @pytest.mark.parametrize(
-    "page,title",
+    "page,title,subtitle",
     [
-        ("views/evaluation.py", "Model Evaluation"),
-        ("views/monitoring.py", "Monitoring"),
-        ("views/model_info.py", "Model Information"),
+        (
+            "views/analyzer.py",
+            "Email Analyzer",
+            "Analyze an email and determine whether it is spam or legitimate.",
+        ),
+        (
+            "views/evaluation.py",
+            "Model Evaluation",
+            "Compare model performance and validation metrics.",
+        ),
+        ("views/monitoring.py", "Monitoring", "Request history and latency."),
+        (
+            "views/model_info.py",
+            "Model Information",
+            "Details about the deployed spam classification model.",
+        ),
     ],
 )
-def test_other_pages_render(page, title):
+def test_page_hero_matches_navigation(page, title, subtitle):
     at = _fresh_app()
     at.switch_page(page).run()
     assert not at.exception, [e.value for e in at.exception]
-    assert at.title[0].value == title
+    hero = _hero_markup(at)
+    assert f"<h1>{title}</h1>" in hero
+    assert f"<p>{subtitle}</p>" in hero
+    assert "Flame Hashira Edition" not in hero
+    assert title not in [heading.value for heading in at.title]
+    assert any('class="rg-embers"' in item.value for item in at.markdown)

@@ -14,9 +14,14 @@ from src.charts import (
     probability_histogram,
     threshold_chart,
 )
+from src.theme import hero
+
+hero(
+    title="Model Evaluation",
+    subtitle="Compare model performance and validation metrics.",
+)
 
 dark = theme_is_dark()
-st.title("Model Evaluation")
 
 ev = load_artifact_json(config.EVALUATION_PATH)
 if not ev:
